@@ -1,0 +1,21 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: payment-service
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+iyzico:
+  api-key: ${IYZICO_API_KEY:sandbox-api-key}
+  secret-key: ${IYZICO_SECRET_KEY:sandbox-secret-key}
+  base-url: ${IYZICO_BASE_URL:https://sandbox-api.iyzipay.com}
+
+services:
+  cart:
+    url: http://payment-service:8085

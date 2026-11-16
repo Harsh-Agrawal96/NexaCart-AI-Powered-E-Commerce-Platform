@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: ""
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    gateway:
+      routes: []
+    discovery:
+      enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dummy-issuer.example.com
+  autoconfigure:
+    exclude:
+      - org.springframework.security.config.annotation.web.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+
+eureka:
+  client:
+    enabled: false
+
+server:
+  port: 0

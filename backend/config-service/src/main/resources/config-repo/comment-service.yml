@@ -1,0 +1,20 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: comment-service
+  datasource:
+    url: jdbc:postgresql://${COMMENT_POSTGRES_HOST:postgres-comment}:${COMMENT_POSTGRES_PORT:5432}/${COMMENT_POSTGRES_DB:comment_db}
+    username: ${COMMENT_POSTGRES_USER:comment_admin}
+    password: ${COMMENT_POSTGRES_PASSWORD:comment_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+services:
+  user:
+    url: http://user-service:8081
+

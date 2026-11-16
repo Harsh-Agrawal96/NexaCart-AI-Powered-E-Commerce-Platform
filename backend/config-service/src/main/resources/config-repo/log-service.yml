@@ -1,0 +1,24 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: log-service
+
+  datasource:
+    url: jdbc:postgresql://${LOG_POSTGRES_HOST:postgres-log}:${LOG_POSTGRES_PORT:5432}/${LOG_POSTGRES_DB:log_db}
+    username: ${LOG_POSTGRES_USER:log_admin}
+    password: ${LOG_POSTGRES_PASSWORD:log_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:guest}}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+logging:
+  level:
+    com.n11bootcamp.log_service: INFO

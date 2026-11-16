@@ -1,0 +1,608 @@
+services:
+  discovery-service:
+    build:
+      context: ../backend
+      dockerfile: discovery-service/Dockerfile
+    image: n11/discovery-service:latest
+    container_name: discovery-service
+    ports:
+      - "${DISCOVERY_PORT}:8761"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8761/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - n11-network
+
+  config-service:
+    build:
+      context: ../backend
+      dockerfile: config-service/Dockerfile
+    image: n11/config-service:latest
+    container_name: config-service
+    ports:
+      - "${CONFIG_PORT}:8888"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8888/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - n11-network
+
+  api-gateway:
+    build:
+      context: ../backend
+      dockerfile: api-gateway/Dockerfile
+    image: n11/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "${GATEWAY_PORT}:8080"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8080/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - n11-network
+
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: postgres-user
+    ports:
+      - "${POSTGRES_USER_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+
+  user-service:
+    build:
+      context: ../backend
+      dockerfile: user-service/Dockerfile
+    image: n11/user-service:latest
+    container_name: user-service
+    # ports:
+    #   - "${USER_SERVICE_PORT}:8081"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      postgres-user:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8081/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - n11-network
+
+  postgres-product:
+    image: postgres:16-alpine
+    container_name: postgres-product
+    ports:
+      - "${PRODUCT_POSTGRES_USER_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${PRODUCT_POSTGRES_DB}
+      - POSTGRES_USER=${PRODUCT_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${PRODUCT_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_product_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PRODUCT_POSTGRES_USER} -d ${PRODUCT_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+
+  product-service:
+    build:
+      context: ../backend
+      dockerfile: product-service/Dockerfile
+    image: n11/product-service:latest
+    container_name: product-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      postgres-product:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - PRODUCT_POSTGRES_HOST=${PRODUCT_POSTGRES_HOST}
+      - PRODUCT_POSTGRES_PORT=${PRODUCT_POSTGRES_PORT}
+      - PRODUCT_POSTGRES_DB=${PRODUCT_POSTGRES_DB}
+      - PRODUCT_POSTGRES_USER=${PRODUCT_POSTGRES_USER}
+      - PRODUCT_POSTGRES_PASSWORD=${PRODUCT_POSTGRES_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8082/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+
+  postgres-comment:
+    image: postgres:16-alpine
+    container_name: postgres-comment
+    ports:
+      - "${COMMENT_POSTGRES_PORT_EXTERNAL}:5432"
+    environment:
+      - POSTGRES_DB=${COMMENT_POSTGRES_DB}
+      - POSTGRES_USER=${COMMENT_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${COMMENT_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_comment_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${COMMENT_POSTGRES_USER} -d ${COMMENT_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+
+  comment-service:
+    build:
+      context: ../backend
+      dockerfile: comment-service/Dockerfile
+    image: n11/comment-service:latest
+    container_name: comment-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      postgres-comment:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - COMMENT_POSTGRES_HOST=postgres-comment
+      - COMMENT_POSTGRES_PORT=5432
+      - COMMENT_POSTGRES_DB=${COMMENT_POSTGRES_DB}
+      - COMMENT_POSTGRES_USER=${COMMENT_POSTGRES_USER}
+      - COMMENT_POSTGRES_PASSWORD=${COMMENT_POSTGRES_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8087/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+
+  ai-service:
+    build:
+      context: ../backend
+      dockerfile: ai-service/Dockerfile
+    image: n11/ai-service:latest
+    container_name: ai-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      # Gemini (values from infra/.env)
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-flash-latest}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8088/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+
+  postgres-keycloak:
+    image: postgres:16-alpine
+    container_name: postgres-keycloak
+    ports:
+      - "${KEYCLOAK_POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${KEYCLOAK_POSTGRES_DB}
+      - POSTGRES_USER=${KEYCLOAK_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${KEYCLOAK_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${KEYCLOAK_POSTGRES_USER} -d ${KEYCLOAK_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+  postgres-order:
+    image: postgres:16-alpine
+    container_name: postgres-order
+    ports:
+      - "${ORDER_POSTGRES_USER_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${ORDER_POSTGRES_DB}
+      - POSTGRES_USER=${ORDER_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${ORDER_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_orders_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${ORDER_POSTGRES_USER} -d ${ORDER_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+
+  order-service:
+    build:
+      context: ../backend
+      dockerfile: order-service/Dockerfile
+    image: n11/order-service:latest
+    container_name: order-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      postgres-order:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - ORDER_POSTGRES_HOST=${ORDER_POSTGRES_HOST}
+      - ORDER_POSTGRES_PORT=${ORDER_POSTGRES_PORT}
+      - ORDER_POSTGRES_DB=${ORDER_POSTGRES_DB}
+      - ORDER_POSTGRES_USER=${ORDER_POSTGRES_USER}
+      - ORDER_POSTGRES_PASSWORD=${ORDER_POSTGRES_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8083/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+  postgres-cart:
+    image: postgres:16-alpine
+    container_name: postgres-cart
+    ports:
+      - "${CART_POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${CART_POSTGRES_DB}
+      - POSTGRES_USER=${CART_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${CART_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_cart_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${CART_POSTGRES_USER} -d ${CART_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+
+  cart-service:
+    build:
+      context: ../backend
+      dockerfile: cart-service/Dockerfile
+    image: n11/cart-service:latest
+    container_name: cart-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      postgres-cart:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - CART_POSTGRES_HOST=${CART_POSTGRES_HOST}
+      - CART_POSTGRES_PORT=${CART_POSTGRES_PORT_INTERNAL}
+      - CART_POSTGRES_DB=${CART_POSTGRES_DB}
+      - CART_POSTGRES_USER=${CART_POSTGRES_USER}
+      - CART_POSTGRES_PASSWORD=${CART_POSTGRES_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8084/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+  postgres-log:
+    image: postgres:16-alpine
+    container_name: postgres-log
+    ports:
+      - "${LOG_POSTGRES_PORT_EXTERNAL}:5432"
+    environment:
+      - POSTGRES_DB=${LOG_POSTGRES_DB}
+      - POSTGRES_USER=${LOG_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${LOG_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_log_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${LOG_POSTGRES_USER} -d ${LOG_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - n11-network
+  log-service:
+    build:
+      context: ../backend
+      dockerfile: log-service/Dockerfile
+    image: n11/log-service:latest
+    container_name: log-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      postgres-log:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - LOG_POSTGRES_HOST=postgres-log
+      - LOG_POSTGRES_PORT=5432
+      - LOG_POSTGRES_DB=${LOG_POSTGRES_DB}
+      - LOG_POSTGRES_USER=${LOG_POSTGRES_USER}
+      - LOG_POSTGRES_PASSWORD=${LOG_POSTGRES_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8086/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+  payment-service:
+    build:
+      context: ../backend
+      dockerfile: payment-service/Dockerfile
+    image: n11/payment-service:latest
+    container_name: payment-service
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - IYZICO_API_KEY=${IYZICO_API_KEY}
+      - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY}
+      - IYZICO_BASE_URL=${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8085/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - n11-network
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.3
+    container_name: keycloak
+    command: start-dev
+    ports:
+      - "${KEYCLOAK_PORT}:8080"
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres-keycloak:5432/${KEYCLOAK_POSTGRES_DB}
+      - KC_DB_USERNAME=${KEYCLOAK_POSTGRES_USER}
+      - KC_DB_PASSWORD=${KEYCLOAK_POSTGRES_PASSWORD}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_HOSTNAME_STRICT=false
+      - KC_HTTP_ENABLED=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+    networks:
+      - n11-network
+
+volumes:
+  postgres_user_data:
+  postgres_product_data:
+  postgres_comment_data:
+  postgres_keycloak_data:
+  postgres_orders_data:
+  postgres_cart_data:
+  postgres_log_data:
+networks:
+  n11-network:
+    driver: bridge

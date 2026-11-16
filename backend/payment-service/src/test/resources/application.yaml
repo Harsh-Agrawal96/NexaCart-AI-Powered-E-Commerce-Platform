@@ -1,0 +1,21 @@
+spring:
+  # IDE/JUnit koşularında main application.yaml içindeki
+  # "configserver:http://config-service:8888" import'unu ezmek için.
+  config:
+    import: "optional:file:./.test-config.yml"
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+eureka:
+  client:
+    enabled: false
+
+iyzico:
+  api-key: "test-api-key"
+  secret-key: "test-secret-key"
+  base-url: "https://sandbox-api.iyzipay.com"
+

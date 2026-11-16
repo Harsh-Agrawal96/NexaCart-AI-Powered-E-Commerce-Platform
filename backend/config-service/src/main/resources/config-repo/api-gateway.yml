@@ -1,0 +1,307 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/n11bootcamp
+          jwk-set-uri: http://keycloak:8080/realms/n11bootcamp/protocol/openid-connect/certs
+  cloud:
+    gateway:
+      routes:
+        - id: user-service-users
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
+
+        - id: user-service-admin
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/admin/users/**
+
+        # ─── Product Service ──────────────────────────────────────
+        - id: product-service-products
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/products/**
+
+        - id: product-service-categories
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/categories/**
+
+        - id: product-service-admin-products
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/admin/products/**
+
+        - id: product-service-admin-categories
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/admin/categories/**
+
+        # ─── Order Service ────────────────────────────────────────
+        - id: order-service-orders
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+
+        - id: order-service-admin-orders
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/admin/orders/**
+
+        # ─── Cart Service ─────────────────────────────────────────
+        - id: cart-service-cart
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/v1/cart/**
+
+        - id: cart-service-admin-carts
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/v1/admin/carts/**
+        # ─── Payment Service ──────────────────────────────────────
+        - id: payment-service-payment
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payment/**
+        # ─── Log Service ──────────────────────────────────────────
+        - id: log-service-logs
+          uri: lb://log-service
+          predicates:
+            - Path=/api/v1/logs/**
+
+        # ─── Comment Service ──────────────────────────────────────
+        - id: comment-service-reviews
+          uri: lb://comment-service
+          predicates:
+            - Path=/api/v1/reviews/**
+
+        - id: comment-service-admin-reviews
+          uri: lb://comment-service
+          predicates:
+            - Path=/api/v1/admin/reviews/**
+
+        # ─── AI Service ───────────────────────────────────────────
+        - id: ai-service-ai
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/v1/ai/**
+        # ─── Actuator Routes ──────────────────────────────────────
+        - id: product-service-health
+          uri: lb://product-service
+          predicates:
+            - Path=/product-service/actuator/health
+          filters:
+            - RewritePath=/product-service/actuator/health, /actuator/health
+
+        - id: user-service-health
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/actuator/health
+          filters:
+            - RewritePath=/user-service/actuator/health, /actuator/health
+
+        - id: cart-service-health
+          uri: lb://cart-service
+          predicates:
+            - Path=/cart-service/actuator/health
+          filters:
+            - RewritePath=/cart-service/actuator/health, /actuator/health
+
+        - id: order-service-health
+          uri: lb://order-service
+          predicates:
+            - Path=/order-service/actuator/health
+          filters:
+            - RewritePath=/order-service/actuator/health, /actuator/health
+
+        - id: payment-service-health
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/actuator/health
+          filters:
+            - RewritePath=/payment-service/actuator/health, /actuator/health
+
+        - id: log-service-health
+          uri: lb://log-service
+          predicates:
+            - Path=/log-service/actuator/health
+          filters:
+            - RewritePath=/log-service/actuator/health, /actuator/health
+
+        - id: comment-service-health
+          uri: lb://comment-service
+          predicates:
+            - Path=/comment-service/actuator/health
+          filters:
+            - RewritePath=/comment-service/actuator/health, /actuator/health
+
+        - id: ai-service-health
+          uri: lb://ai-service
+          predicates:
+            - Path=/ai-service/actuator/health
+          filters:
+            - RewritePath=/ai-service/actuator/health, /actuator/health
+        # ─── Swagger Routes ───────────────────────────────────────
+        - id: user-service-api-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/api-docs/**
+          filters:
+            - RewritePath=/user-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: product-service-api-docs
+          uri: lb://product-service
+          predicates:
+            - Path=/product-service/api-docs/**
+          filters:
+            - RewritePath=/product-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: cart-service-api-docs
+          uri: lb://cart-service
+          predicates:
+            - Path=/cart-service/api-docs/**
+          filters:
+            - RewritePath=/cart-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: order-service-api-docs
+          uri: lb://order-service
+          predicates:
+            - Path=/order-service/api-docs/**
+          filters:
+            - RewritePath=/order-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: payment-service-api-docs
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/api-docs/**
+          filters:
+            - RewritePath=/payment-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: log-service-api-docs
+          uri: lb://log-service
+          predicates:
+            - Path=/log-service/api-docs/**
+          filters:
+            - RewritePath=/log-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: comment-service-api-docs
+          uri: lb://comment-service
+          predicates:
+            - Path=/comment-service/api-docs/**
+          filters:
+            - RewritePath=/comment-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        # Eski/yanlış isim: review-service → aynı comment-service (yoksa 404 + NoResourceFoundException gürültüsü)
+        - id: comment-service-api-docs-alias-review
+          uri: lb://comment-service
+          predicates:
+            - Path=/review-service/api-docs/**
+          filters:
+            - RewritePath=/review-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+
+        - id: ai-service-api-docs
+          uri: lb://ai-service
+          predicates:
+            - Path=/ai-service/api-docs/**
+          filters:
+            - RewritePath=/ai-service/api-docs(?<remaining>.*), /api-docs$\{remaining}
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowed-origins: "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowed-headers: "*"
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: user-service
+        url: /user-service/api-docs
+      - name: product-service
+        url: /product-service/api-docs
+      - name: cart-service
+        url: /cart-service/api-docs
+      - name: order-service
+        url: /order-service/api-docs
+      - name: payment-service
+        url: /payment-service/api-docs
+      - name: log-service
+        url: /log-service/api-docs
+      - name: comment-service
+        url: /comment-service/api-docs
+      - name: ai-service
+        url: /ai-service/api-docs
+  api-docs:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    gateway:
+      enabled: true
+
+rate-limiting:
+  enabled: true
+  exempt-path-patterns:
+    - /actuator/**
+    - /swagger-ui.html
+    - /swagger-ui/**
+    - /api-docs/**
+    - /*/api-docs/**
+    - /webjars/**
+  policy:
+    limit-for-period: 20
+    limit-refresh-period: 1s
+    timeout-duration: 0
+
+gateway-resilience:
+  enabled: true
+  protected-path-patterns:
+    - /api/v1/payment
+    - /api/v1/payment/**
+  exempt-path-patterns:
+    - /actuator/**
+    - /swagger-ui.html
+    - /swagger-ui/**
+    - /api-docs/**
+    - /*/api-docs/**
+    - /webjars/**
+  circuit-breaker-instance: paymentGateway
+  time-limiter-instance: paymentGateway
+  # Payment: Feign order + Rabbit publish; fail path can exceed 2s in Docker — avoid false timeouts on gateway
+  fallback-timeout: 30s
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+  timelimiter:
+    instances:
+      paymentGateway:
+        timeoutDuration: 30s
+        cancelRunningFuture: true

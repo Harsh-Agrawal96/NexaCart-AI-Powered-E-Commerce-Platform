@@ -1,0 +1,20 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: ai-service
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-flash-latest}
+
+services:
+  product:
+    url: http://product-service:8082
+  review:
+    url: http://comment-service:8087
+  user:
+    url: http://user-service:8081
+  log:
+    url: http://log-service:8086

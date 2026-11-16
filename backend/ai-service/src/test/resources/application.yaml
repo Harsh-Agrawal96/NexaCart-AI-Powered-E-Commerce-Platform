@@ -1,0 +1,11 @@
+# Test classpath öncelikli: ana application.yaml içindeki config server import'unu devre dışı bırakır
+# (aksi halde tam SpringBootTest Docker'daki config-service'e bağlanmaya çalışır ve takılır).
+spring:
+  config:
+    import: ""
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+      import-check:
+        enabled: false

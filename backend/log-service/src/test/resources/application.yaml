@@ -1,0 +1,12 @@
+spring:
+  config:
+    import: "optional:file:./.test-config.yml"
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+
+eureka:
+  client:
+    enabled: false
+

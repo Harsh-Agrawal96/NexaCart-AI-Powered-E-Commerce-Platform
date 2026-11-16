@@ -1,0 +1,22 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: cart-service
+  datasource:
+    url: jdbc:postgresql://${CART_POSTGRES_HOST:postgres-cart}:${CART_POSTGRES_PORT:5432}/${CART_POSTGRES_DB:cart_db}
+    username: ${CART_POSTGRES_USER:cart_admin}
+    password: ${CART_POSTGRES_PASSWORD:cart_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+services:
+  product:
+    url: http://product-service:8082

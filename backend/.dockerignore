@@ -1,0 +1,31 @@
+# Maven build outputs
+**/target/
+
+# IDE files
+**/.idea/
+**/.vscode/
+**/*.iml
+
+# Maven wrapper
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# OS / temp
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+**/logs/
+
+# Docs
+**/HELP.md
+**/README.md
+
+# Environment files
+**/.env
+**/.env.local

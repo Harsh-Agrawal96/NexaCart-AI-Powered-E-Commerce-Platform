@@ -1,0 +1,23 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:postgresql://${ORDER_POSTGRES_HOST:postgres-order}:${ORDER_POSTGRES_PORT:5432}/${ORDER_POSTGRES_DB:order_db}
+    username: ${ORDER_POSTGRES_USER:order_admin}
+    password: ${ORDER_POSTGRES_PASSWORD:order_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+services:
+  cart:
+    url: http://cart-service:8084

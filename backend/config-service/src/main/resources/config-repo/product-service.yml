@@ -1,0 +1,20 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: jdbc:postgresql://${PRODUCT_POSTGRES_HOST:postgres-product}:${PRODUCT_POSTGRES_PORT:5432}/${PRODUCT_POSTGRES_DB:product_db}
+    username: ${PRODUCT_POSTGRES_USER:product_admin}
+    password: ${PRODUCT_POSTGRES_PASSWORD:product_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}

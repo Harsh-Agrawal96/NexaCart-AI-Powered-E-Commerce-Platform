@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1.7
+
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+WORKDIR /build
+
+COPY pom.xml .
+COPY common-lib/pom.xml         common-lib/pom.xml
+COPY discovery-service/pom.xml  discovery-service/pom.xml
+COPY config-service/pom.xml     config-service/pom.xml
+COPY api-gateway/pom.xml        api-gateway/pom.xml
+COPY user-service/pom.xml       user-service/pom.xml
+COPY product-service/pom.xml    product-service/pom.xml
+COPY order-service/pom.xml      order-service/pom.xml
+COPY cart-service/pom.xml       cart-service/pom.xml
+COPY payment-service/pom.xml    payment-service/pom.xml
+COPY log-service/pom.xml        log-service/pom.xml
+COPY comment-service/pom.xml    comment-service/pom.xml
+COPY ai-service/pom.xml         ai-service/pom.xml
+
+
+
+RUN mvn -pl api-gateway -am dependency:go-offline -B
+
+COPY common-lib/src   common-lib/src
+COPY api-gateway/src  api-gateway/src
+
+RUN mvn -pl api-gateway -am clean package -DskipTests -B
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN addgroup -S spring && adduser -S spring -G spring
+
+COPY --from=builder --chown=spring:spring /build/api-gateway/target/*.jar app.jar
+
+USER spring:spring
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+ExitOnOutOfMemoryError", \
+    "-jar", "/app/app.jar"]
